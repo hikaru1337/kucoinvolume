@@ -1,0 +1,136 @@
+// Initialize variables
+const initialBalance = 300; // Set your initial balance (e.g., $300)
+const targetTradingVolume = 36000; // Set your target cumulative trading volume
+const commissionRate = 0.001; // Commission rate (0.1%)
+let currentBalance = initialBalance; // Track the remaining balance after commissions
+let cumulativeVolume = 0; // Initialize cumulative volume tracker
+ 
+// Utility function to wait (for delays between actions)
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+ 
+// Function to simulate clicking a button by class name
+function clickButtonByClassName(className) {
+    const button = document.querySelector(className);
+    if (button) {
+        button.click();
+        console.log(`Clicked button: ${className}`);
+    } else {
+        console.log(`Button with class ${className} not found!`);
+    }
+}
+ 
+// Function to reliably switch tabs (Buy or Sell)
+async function selectTab(action) {
+    let tabSelector = "";
+ 
+    if (action === "buy") {
+        tabSelector = "div[color='primary']"; // Buy tab selector
+    } else if (action === "sell") {
+        tabSelector = "div[color='secondary']"; // Sell tab selector
+    } else {
+        console.log("Invalid action! Use 'buy' or 'sell'.");
+        return;
+    }
+ 
+    const tab = document.querySelector(tabSelector);
+    if (tab) {
+        tab.click();
+        console.log(`Switched to ${action.toUpperCase()} tab.`);
+        await wait(500); // Wait for the tab switch (ensure UI updates)
+    } else {
+        console.log(`${action.toUpperCase()} tab not found!`);
+    }
+}
+ 
+// Function to click the "100%" button
+async function setPercentageTo100() {
+    const buttons = document.querySelectorAll("button"); // Select all button elements
+    for (const button of buttons) {
+        if (button.textContent.trim() === "100%") { // Match the button by its text content
+            button.click();
+            console.log("Clicked the 100% button.");
+            await wait(500); // Wait for percentage to update
+            return;
+        }
+    }
+    console.log("100% button not found!");
+}
+ 
+// Function to execute a trade (Buy or Sell)
+async function executeTrade(action) {
+    let buttonClass = "";
+ 
+    if (action === "buy") {
+        buttonClass = ".KuxButton-containedBrandGreen"; // Buy button
+    } else if (action === "sell") {
+        buttonClass = ".KuxButton-containedSecondary"; // Sell button
+    } else {
+        console.log("Invalid action! Use 'buy' or 'sell'.");
+        return;
+    }
+ 
+    const button = document.querySelector(buttonClass);
+    if (button) {
+        button.click();
+        console.log(`${action.toUpperCase()} executed.`);
+        await wait(2000); // Wait for trade to process
+    } else {
+        console.log(`${action} button not found!`);
+    }
+}
+ 
+// Function to calculate and deduct commission
+function calculateAndDeductCommission(amount) {
+    const commission = amount * commissionRate;
+    currentBalance -= commission;
+    console.log(`Commission of $${commission.toFixed(2)} deducted. Remaining balance: $${currentBalance.toFixed(2)}`);
+    return commission;
+}
+ 
+// Main trade cycle
+async function tradeCycle() {
+    while (cumulativeVolume < targetTradingVolume && currentBalance > 0) {
+        const tradeAmount = currentBalance; // Use the full balance for trading
+ 
+        // Check if the balance is sufficient for a trade
+        if (tradeAmount <= 0 || currentBalance <= tradeAmount * commissionRate * 2) {
+            console.log("Insufficient balance to continue trading.");
+            break;
+        }
+ 
+        // Execute Buy
+        console.log("Starting Buy cycle...");
+        await selectTab("buy"); // Switch to the Buy tab
+        await setPercentageTo100(); // Click the "100%" button
+        await executeTrade("buy"); // Execute the Buy order
+ 
+        // Deduct buy commission
+        const buyCommission = calculateAndDeductCommission(tradeAmount);
+ 
+        // Execute Sell
+        console.log("Starting Sell cycle...");
+        await selectTab("sell"); // Switch to the Sell tab
+        await setPercentageTo100(); // Click the "100%" button
+        await executeTrade("sell"); // Execute the Sell order
+ 
+        // Deduct sell commission
+        const sellCommission = calculateAndDeductCommission(tradeAmount);
+ 
+        // Update cumulative volume (add both buy and sell amounts)
+        cumulativeVolume += tradeAmount * 2;
+        console.log(`Cumulative Trading Volume: $${cumulativeVolume.toFixed(2)}`);
+        console.log(`Remaining Balance: $${currentBalance.toFixed(2)}`);
+ 
+        // Wait for a short delay before the next cycle
+        await wait(5000); // 5-second delay
+    }
+ 
+    console.log("Target trading volume reached or balance depleted.");
+    console.log(`Final Stats - Cumulative Trading Volume: $${cumulativeVolume.toFixed(2)}, Remaining Balance: $${currentBalance.toFixed(2)}`);
+}
+ 
+// Start the trading cycle
+tradeCycle();
+ 
